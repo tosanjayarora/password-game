@@ -1,0 +1,27 @@
+{
+    "bindings": [{
+            "authLevel": "anonymous",
+            "type": "httpTrigger",
+            "direction": "in",
+            "name": "req",
+            "methods": [
+                "get"
+            ]
+        },
+        {
+            "type": "http",
+            "direction": "out",
+            "name": "res"
+        },
+        {
+            "name": "userEntity",
+            "type": "table",
+            "tableName": "User",
+            "partitionKey": "{username}",
+            "rowKey": "{username}",
+            "connection": "StorageAccountConnectionString",
+            "direction": "in"
+        }
+    ],
+    "scriptFile": "../dist/GetUser/index.js"
+}

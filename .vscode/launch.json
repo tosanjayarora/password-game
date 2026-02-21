@@ -1,0 +1,92 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug cat-game: chrome",
+            "cwd": "${workspaceFolder}/cat-game",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}/cat-game",
+            "breakOnLoad": true,
+            "pathMapping": {
+                "/_karma_webpack_": "${workspaceFolder}/cat-game"
+            },
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${webRoot}/*",
+                "/./*": "${webRoot}/*",
+                "/src/*": "${webRoot}/*",
+                "/*": "*",
+                "/./~/*": "${webRoot}/node_modules/*"
+            },
+            "preLaunchTask": "npm: serve - cat-game"
+        },
+        {
+            "name": "Debug cat-game: edge",
+            "cwd": "${workspaceFolder}/cat-game",
+            "type": "edge",
+            "request": "launch",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}/cat-game",
+            "breakOnLoad": true,
+            "pathMapping": {
+                "/_karma_webpack_": "${workspaceFolder}/cat-game"
+            },
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${webRoot}/*",
+                "/./*": "${webRoot}/*",
+                "/src/*": "${webRoot}/*",
+                "/*": "*",
+                "/./~/*": "${webRoot}/node_modules/*"
+            },
+            "preLaunchTask": "npm: serve - cat-game"
+        },
+        {
+            "name": "Debug dog-game: chrome",
+            "cwd": "${workspaceFolder}/dog-game",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8081",
+            "webRoot": "${workspaceFolder}/dog-game",
+            "breakOnLoad": true,
+            "pathMapping": {
+                "/_karma_webpack_": "${workspaceFolder}/dog-game"
+            },
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${webRoot}/*",
+                "/./*": "${webRoot}/*",
+                "/src/*": "${webRoot}/*",
+                "/*": "*",
+                "/./~/*": "${webRoot}/node_modules/*"
+            },
+            "preLaunchTask": "npm: serve - dog-game"
+        },
+        {
+            "name": "Debug dog-game: edge",
+            "cwd": "${workspaceFolder}/dog-game",
+            "type": "edge",
+            "request": "launch",
+            "url": "http://localhost:8081",
+            "webRoot": "${workspaceFolder}/dog-game",
+            "breakOnLoad": true,
+            "pathMapping": {
+                "/_karma_webpack_": "${workspaceFolder}/dog-game"
+            },
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${webRoot}/*",
+                "/./*": "${webRoot}/*",
+                "/src/*": "${webRoot}/*",
+                "/*": "*",
+                "/./~/*": "${webRoot}/node_modules/*"
+            },
+            "preLaunchTask": "npm: serve - dog-game"
+        },
+        {
+            "name": "Debug backend-api",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "preLaunchTask": "func: host start"
+        }
+    ]
+}

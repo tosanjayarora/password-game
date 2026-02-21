@@ -1,0 +1,20 @@
+{
+    "html.format.wrapAttributes": "preserve-aligned",
+    "html.format.wrapLineLength": 0,
+    "vetur.format.options.tabSize": 2,
+    "vetur.format.defaultFormatterOptions": {
+        "js-beautify-html": {
+            "wrap_attributes": "preserve-aligned",
+            "wrap_line_length": 0
+        }
+    },
+    "vetur.format.defaultFormatter.ts": "vscode-typescript",
+    "vetur.experimental.templateInterpolationService": true,
+    "vetur.format.defaultFormatter.html": "js-beautify-html",
+    "azureFunctions.deploySubpath": "backend-api",
+    "azureFunctions.postDeployTask": "npm install",
+    "azureFunctions.projectLanguage": "TypeScript",
+    "azureFunctions.projectRuntime": "~3",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.preDeployTask": "npm prune"
+}

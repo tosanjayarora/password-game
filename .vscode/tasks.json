@@ -1,0 +1,84 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "npm: serve - cat-game",
+            "type": "npm",
+            "script": "serve",
+            "path": "cat-game/",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "base": "$tsc-watch",
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "Starting development server",
+                        "endsPattern": "Compiled successfully"
+                    }
+                }
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "npm: serve - dog-game",
+            "type": "npm",
+            "script": "serve",
+            "path": "dog-game/",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "base": "$tsc-watch",
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "Starting development server",
+                        "endsPattern": "Compiled successfully"
+                    }
+                }
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "func: host start",
+            "type": "func",
+            "command": "host start",
+            "problemMatcher": "$func-node-watch",
+            "isBackground": true,
+            "dependsOn": "npm build - backend-api",
+            "options": {
+                "cwd": "${workspaceFolder}/backend-api"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "npm build - backend-api",
+            "command": "npm run build",
+            "dependsOn": "npm install - backend-api",
+            "problemMatcher": "$tsc",
+            "options": {
+                "cwd": "${workspaceFolder}/backend-api"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "npm install - backend-api",
+            "command": "npm install",
+            "options": {
+                "cwd": "${workspaceFolder}/backend-api"
+            }
+        },
+        {
+            "type": "shell",
+            "label": "npm install - backend-api",
+            "command": "npm install",
+            "options": {
+                "cwd": "${workspaceFolder}/backend-api"
+            }
+        }
+    ]
+}

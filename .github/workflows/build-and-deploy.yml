@@ -1,0 +1,176 @@
+name: Build (and deploy)
+on:
+  push:
+    branches:
+      - main
+      - backup
+      - wibartle
+  workflow_dispatch:
+    inputs:
+      githubEnv:
+        description: "Github Environment"
+        required: true
+        default: Beta
+env:
+  ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+  ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+  ARM_USE_OIDC: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform Plan/Apply
+    runs-on: ubuntu-latest
+    environment: ${{ ((github.event_name == 'push') && ((github.ref_name == 'main' || github.ref_name == 'backup') && github.ref_name || 'Beta')) || github.event.inputs.githubEnv }}
+    env:
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_TFSTATE_RESOURCE_GROUP: ${{ vars.AZURE_TFSTATE_RESOURCE_GROUP }}
+      AZURE_TFSTATE_STORAGE_ACCOUNT: ${{ vars.AZURE_TFSTATE_STORAGE_ACCOUNT }}
+      GITHUB_ENVIRONMENT: ${{ ((github.event_name == 'push') && ((github.ref_name == 'main' || github.ref_name == 'backup') && github.ref_name || 'Beta')) || github.event.inputs.githubEnv }}
+    defaults:
+      run:
+        working-directory: ./.infra
+    outputs:
+      app_insights_instrumentation_key: ${{ steps.tf_output.outputs.app_insights_instrumentation_key }}
+      cat_game_app_service_name: ${{ steps.tf_output.outputs.cat_game_app_service_name }}
+      dog_game_app_service_name: ${{ steps.tf_output.outputs.dog_game_app_service_name }}
+      backend_api_func_app_name: ${{ steps.tf_output.outputs.backend_api_func_app_name }}
+      backend_api_func_app_hostname: ${{ steps.tf_output.outputs.backend_api_func_app_hostname }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+      - name: Terraform fmt
+        id: fmt
+        continue-on-error: true
+        run: terraform fmt -check
+      - name: Terraform Init
+        id: init
+        run: |
+            terraform init \
+              -backend-config "key=${{ format('pwdgame-{0}-state', env.GITHUB_ENVIRONMENT) }}" \
+              -backend-config "resource_group_name=${{ env.AZURE_TFSTATE_RESOURCE_GROUP }}" \
+              -backend-config "storage_account_name=${{ env.AZURE_TFSTATE_STORAGE_ACCOUNT }}"
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+      - name: Terraform Import
+        id: import
+        continue-on-error: true
+        run: |
+          terraform import \
+              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
+              azurerm_resource_group.main_rg /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}
+      - name: Terraform Plan
+        id: plan
+        run: |
+            terraform plan -no-color -out=tfplan \
+              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}"
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -no-color tfplan
+      - name: Terraform Output
+        id: tf_output
+        run: |
+          echo "app_insights_instrumentation_key=$(terraform output -raw app_insights_instrumentation_key)" >> "$GITHUB_OUTPUT"
+          echo "cat_game_app_service_name=$(terraform output -raw cat_game_app_service_name)" >> "$GITHUB_OUTPUT"
+          echo "dog_game_app_service_name=$(terraform output -raw dog_game_app_service_name)" >> "$GITHUB_OUTPUT"
+          echo "backend_api_func_app_name=$(terraform output -raw backend_api_func_app_name)" >> "$GITHUB_OUTPUT"
+          echo "backend_api_func_app_hostname=$(terraform output -raw backend_api_func_app_hostname)" >> "$GITHUB_OUTPUT"
+
+  deploy-api:
+    name: Build/Deploy Backend API
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment: ${{ ((github.event_name == 'push') && ((github.ref_name == 'main' || github.ref_name == 'backup') && github.ref_name || 'Beta')) || github.event.inputs.githubEnv }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Build shared
+        working-directory: ./shared
+        run: |
+            npm install
+            npm run build
+      - name: Build backend-api
+        working-directory: ./backend-api
+        run: |
+            npm install
+            npm run build
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+      - name: Overwrite local dependency symlink with actual content
+        run: |
+          rm ./backend-api/node_modules/@pwdgame/shared
+          cp -rfv ./shared ./backend-api/node_modules/@pwdgame
+      - name: Deploy backend-api
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ needs.terraform.outputs.backend_api_func_app_name }}
+          package: ./backend-api
+
+  deploy-apps:
+    name: Build/Deploy Apps
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment: ${{ ((github.event_name == 'push') && ((github.ref_name == 'main' || github.ref_name == 'backup') && github.ref_name || 'Beta')) || github.event.inputs.githubEnv }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Build shared
+        working-directory: ./shared
+        run: |
+            npm install
+            npm run build
+      - name: Replace settings in cat-game
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: './cat-game/appsettings.json'
+        env:
+          backendApiBaseUrl: https://${{ needs.terraform.outputs.backend_api_func_app_hostname }}/
+          appInsightsInstrumentationKey: https://${{ needs.terraform.outputs.app_insights_instrumentation_key }}/
+      - name: Replace settings in dog-game
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: './dog-game/appsettings.json'
+        env:
+          backendApiBaseUrl: https://${{ needs.terraform.outputs.backend_api_func_app_hostname }}/
+          appInsightsInstrumentationKey: https://${{ needs.terraform.outputs.app_insights_instrumentation_key }}/
+      - name: Build cat-game
+        working-directory: ./cat-game
+        run: |
+            npm install
+            npm run build
+      - name: Build dog-game
+        working-directory: ./dog-game
+        run: |
+            npm install
+            npm run build
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+      - name: Deploy cat-game
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ needs.terraform.outputs.cat_game_app_service_name }}
+          package: ./cat-game/dist
+      - name: Deploy dog-game
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ needs.terraform.outputs.dog_game_app_service_name }}
+          package: ./dog-game/dist

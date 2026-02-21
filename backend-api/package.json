@@ -1,0 +1,24 @@
+{
+    "name": "backend-api",
+    "version": "1.0.1",
+    "description": "",
+    "scripts": {
+        "build": "tsc --build --clean && tsc",
+        "watch": "tsc -w",
+        "prestart": "npm run build",
+        "start": "func start"
+    },
+    "dependencies": {
+        "@azure/data-tables": "^13.2.1",
+        "@azure/functions": "^3.5.0",
+        "@pwdgame/shared": "file:../shared",
+        "password-game": "file:..",
+        "profanity-js": "^0.1.4",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^18.15.3",
+        "@types/uuid": "^9.0.1",
+        "typescript": "^5.0.2"
+    }
+}

@@ -1,0 +1,23 @@
+{
+    "name": "@pwdgame/shared",
+    "version": "1.0.1",
+    "description": "",
+    "author": "",
+    "license": "MIT",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc --build --clean && tsc"
+    },
+    "dependencies": {
+        "@azure/data-tables": "^13.2.1",
+        "@microsoft/signalr": "^7.0.4",
+        "crypto-js": "^4.1.1",
+        "password-game": "file:..",
+        "typescript": "^5.0.2",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "@types/crypto-js": "^4.1.1",
+        "@types/uuid": "^9.0.1"
+    }
+}

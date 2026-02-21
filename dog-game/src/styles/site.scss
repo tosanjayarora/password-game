@@ -1,0 +1,35 @@
+// Overrides
+@import "~bootswatch/dist/litera/variables";
+@import "~bootstrap/scss/bootstrap";
+@import "~bootswatch/dist/litera/bootswatch";
+@import "_transitions";
+p {
+    font-family: $font-family-sans-serif;
+}
+
+html,
+body,
+#app {
+    height: 100%;
+}
+
+body {
+    // http://www.heropatterns.com/
+    background-color: #f0fff9;
+    background-image: url("../assets/bg-signal-green.svg");
+    background-attachment: fixed;
+}
+
+.card-img-left {
+    height: 100%;
+    @include border-left-radius($card-inner-border-radius);
+}
+
+.card-img-right {
+    height: 100%;
+    @include border-right-radius($card-inner-border-radius);
+}
+
+img.circle {
+    border-radius: 50%;
+}
