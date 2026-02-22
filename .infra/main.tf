@@ -10,7 +10,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~>3.48.0"
+      version = "~>4.0"
     }
   }
 }
@@ -76,7 +76,7 @@ resource "azurerm_static_web_app" "dog_game" {
 }
 
 resource "azurerm_signalr_service" "chat_service" {
-  depends_on = [azurerm_linux_web_app.dog_game]
+  depends_on = [azurerm_static_web_app.dog_game]
   name                = "${local.service_prefix}-signalr-${random_string.service_suffix.id}"
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
@@ -86,8 +86,8 @@ resource "azurerm_signalr_service" "chat_service" {
   }
   cors {
     allowed_origins = [
-      "https://${azurerm_linux_web_app.cat_game.default_hostname}",
-      "https://${azurerm_linux_web_app.dog_game.default_hostname}",
+      azurerm_static_web_app.cat_game.default_static_web_app_url,
+      azurerm_static_web_app.dog_game.default_static_web_app_url,
     ]
   }
   service_mode = "Serverless"
@@ -117,8 +117,8 @@ resource "azurerm_linux_function_app" "backend_api" {
     }
     cors {
       allowed_origins = [
-        "https://${azurerm_static_web_app.cat_game.default_static_web_app_url}",
-        "https://${azurerm_static_web_app.dog_game.default_static_web_app_url}",
+        azurerm_static_web_app.cat_game.default_static_web_app_url,
+        azurerm_static_web_app.dog_game.default_static_web_app_url,
       ]
       support_credentials = true
     }
