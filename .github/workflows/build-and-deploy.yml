@@ -71,7 +71,8 @@ jobs:
         id: plan
         run: |
             terraform plan -no-color -out=tfplan \
-              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}"
+              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
+              -var "azure_region=centralindia"
       - name: Terraform Apply
         id: apply
         run: terraform apply -auto-approve -no-color tfplan
