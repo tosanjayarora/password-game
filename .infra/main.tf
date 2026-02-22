@@ -62,7 +62,7 @@ resource "azurerm_service_plan" "main_plan" {
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
   os_type             = "Linux"
-  sku_name            = "B1"
+  sku_name            = "F1"
   timeouts {
     create = "10m"
   }  
