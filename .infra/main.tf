@@ -34,7 +34,7 @@ resource "azurerm_resource_group" "main_rg" {
 resource "azurerm_application_insights" "main_ai" {
   depends_on = [azurerm_resource_group.main_rg]
   name                = "${local.service_prefix}-ai-${random_string.service_suffix.id}"
-  location            = azurerm_resource_group.main_rg.location
+  location            = "eastus"
   resource_group_name = azurerm_resource_group.main_rg.name
   application_type    = "web"
   timeouts {
