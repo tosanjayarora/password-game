@@ -56,47 +56,23 @@ resource "azurerm_storage_account" "main_storage" {
   }  
 }
 
-resource "azurerm_service_plan" "main_plan" {
+# Static Web Apps for frontends (no service plan quota required)
+resource "azurerm_static_web_app" "cat_game" {
   depends_on = [azurerm_storage_account.main_storage]
-  name                = "${local.service_prefix}-apps-${random_string.service_suffix.id}"
-  location            = azurerm_resource_group.main_rg.location
-  resource_group_name = azurerm_resource_group.main_rg.name
-  os_type             = "Linux"
-  sku_name            = "F1"
-  timeouts {
-    create = "10m"
-  }  
-}
-
-resource "azurerm_linux_web_app" "cat_game" {
-  depends_on = [azurerm_service_plan.main_plan]
   name                = "${local.service_prefix}-cat-game-${random_string.service_suffix.id}"
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
-  service_plan_id     = azurerm_service_plan.main_plan.id
-  https_only          = true
-  site_config {}
-  app_settings = {
-    "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.main_ai.instrumentation_key
-    "WEBSITE_RUN_FROM_PACKAGE" = 1
-  }
+  sku_tier            = "Free"
+  sku_size            = "Free"
 }
 
-resource "azurerm_linux_web_app" "dog_game" {
-  depends_on = [azurerm_linux_web_app.cat_game]
+resource "azurerm_static_web_app" "dog_game" {
+  depends_on = [azurerm_static_web_app.cat_game]
   name                = "${local.service_prefix}-dog-game-${random_string.service_suffix.id}"
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
-  service_plan_id     = azurerm_service_plan.main_plan.id
-  https_only          = true
-  site_config {}
-  app_settings = {
-    "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.main_ai.instrumentation_key
-    "WEBSITE_RUN_FROM_PACKAGE" = 1
-  }
-  timeouts {
-    create = "10m"
-  }  
+  sku_tier            = "Free"
+  sku_size            = "Free"
 }
 
 resource "azurerm_signalr_service" "chat_service" {
@@ -125,7 +101,6 @@ resource "azurerm_linux_function_app" "backend_api" {
   name                       = "${local.service_prefix}-backend-api-${random_string.service_suffix.id}"
   location                   = azurerm_resource_group.main_rg.location
   resource_group_name        = azurerm_resource_group.main_rg.name
-  service_plan_id            = azurerm_service_plan.main_plan.id
   storage_account_name       = azurerm_storage_account.main_storage.name
   storage_account_access_key = azurerm_storage_account.main_storage.primary_access_key
   https_only                 = true
@@ -136,15 +111,14 @@ resource "azurerm_linux_function_app" "backend_api" {
     "WEBSITE_RUN_FROM_PACKAGE"       = 1
   }
   site_config {
-    always_on = true
     application_insights_key = azurerm_application_insights.main_ai.instrumentation_key
     application_stack {
       node_version = 18
     }
     cors {
       allowed_origins = [
-        "https://${azurerm_linux_web_app.cat_game.default_hostname}",
-        "https://${azurerm_linux_web_app.dog_game.default_hostname}",
+        "https://${azurerm_static_web_app.cat_game.default_static_web_app_url}",
+        "https://${azurerm_static_web_app.dog_game.default_static_web_app_url}",
       ]
       support_credentials = true
     }
@@ -159,12 +133,12 @@ output "app_insights_instrumentation_key" {
   sensitive = true
 }
 
-output "cat_game_app_service_name" {
-  value = azurerm_linux_web_app.cat_game.name
+output "cat_game_url" {
+  value = azurerm_static_web_app.cat_game.default_static_web_app_url
 }
 
-output "dog_game_app_service_name" {
-  value = azurerm_linux_web_app.dog_game.name
+output "dog_game_url" {
+  value = azurerm_static_web_app.dog_game.default_static_web_app_url
 }
 
 output "backend_api_func_app_name" {
