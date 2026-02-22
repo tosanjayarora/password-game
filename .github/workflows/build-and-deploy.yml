@@ -67,25 +67,35 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
-      - name: Terraform Import
+      - name: Terraform Import (safe)
         id: import
         continue-on-error: true
         run: |
-          terraform import \
-              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
-              azurerm_resource_group.main_rg /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}
-      - name: Clean up existing Application Insights
-        id: cleanup_ai
-        continue-on-error: true
-        run: |
-          # Delete any existing Application Insights resources to avoid conflicts
-          az resource delete \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --resource-type "Microsoft.Insights/components" \
-            --ids $(az resource list \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --resource-type "Microsoft.Insights/components" \
-              --query "[].id" -o tsv)
+          set -e
+          echo "Checking if azurerm_resource_group.main_rg is already in terraform state..."
+          if terraform state list -no-color | grep -q '^azurerm_resource_group.main_rg$'; then
+            echo "azurerm_resource_group.main_rg already in state; skipping import"
+          else
+            echo "Importing resource group into terraform state..."
+            terraform import -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
+              azurerm_resource_group.main_rg /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }} || true
+          fi
+
+          echo "Searching for existing Application Insights resources to import..."
+          AI_IDS=$(az resource list --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" --resource-type "Microsoft.Insights/components" --query "[].id" -o tsv)
+          if [ ! -z "$AI_IDS" ] && [ "$AI_IDS" != "None" ]; then
+            for AI_ID in $AI_IDS; do
+              if terraform state list -no-color | grep -q '^azurerm_application_insights.main_ai$'; then
+                echo "azurerm_application_insights.main_ai already in state; skipping import"
+              else
+                echo "Importing Application Insights resource $AI_ID into terraform state..."
+                terraform import -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
+                  azurerm_application_insights.main_ai "$AI_ID" || true
+              fi
+            done
+          else
+            echo "No Application Insights resources found to import"
+          fi
       - name: Terraform Plan
         id: plan
         run: |
@@ -186,12 +196,16 @@ jobs:
           tenant-id: ${{ env.ARM_TENANT_ID }}
           subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
       - name: Deploy cat-game
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ needs.terraform.outputs.cat_game_app_service_name }}
-          package: ./cat-game/dist
+        run: |
+          echo "Deploying cat-game static site"
+          az staticwebapp upload \
+            --name "${{ needs.terraform.outputs.cat_game_app_name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --source ./cat-game/dist
       - name: Deploy dog-game
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ needs.terraform.outputs.dog_game_app_service_name }}
-          package: ./dog-game/dist
+        run: |
+          echo "Deploying dog-game static site"
+          az staticwebapp upload \
+            --name "${{ needs.terraform.outputs.dog_game_app_name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --source ./dog-game/dist

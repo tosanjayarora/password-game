@@ -155,6 +155,14 @@ output "dog_game_url" {
   value = "https://${azurerm_static_web_app.dog_game.default_host_name}"
 }
 
+output "cat_game_app_name" {
+  value = azurerm_static_web_app.cat_game.name
+}
+
+output "dog_game_app_name" {
+  value = azurerm_static_web_app.dog_game.name
+}
+
 output "backend_api_func_app_name" {
   value = azurerm_linux_function_app.backend_api.name
 }
