@@ -60,7 +60,7 @@ resource "azurerm_storage_account" "main_storage" {
 resource "azurerm_static_web_app" "cat_game" {
   depends_on = [azurerm_storage_account.main_storage]
   name                = "${local.service_prefix}-cat-game-${random_string.service_suffix.id}"
-  location            = azurerm_resource_group.main_rg.location
+  location            = "westus2"
   resource_group_name = azurerm_resource_group.main_rg.name
   sku_tier            = "Free"
   sku_size            = "Free"
@@ -69,7 +69,7 @@ resource "azurerm_static_web_app" "cat_game" {
 resource "azurerm_static_web_app" "dog_game" {
   depends_on = [azurerm_static_web_app.cat_game]
   name                = "${local.service_prefix}-dog-game-${random_string.service_suffix.id}"
-  location            = azurerm_resource_group.main_rg.location
+  location            = "westus2"
   resource_group_name = azurerm_resource_group.main_rg.name
   sku_tier            = "Free"
   sku_size            = "Free"
