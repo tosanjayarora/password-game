@@ -90,6 +90,7 @@ resource "azurerm_service_plan" "consumption_plan" {
 
 resource "azurerm_signalr_service" "chat_service" {
   depends_on = [azurerm_service_plan.consumption_plan]
+  name                = "${local.service_prefix}-signalr-${random_string.service_suffix.id}"
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
   sku {
