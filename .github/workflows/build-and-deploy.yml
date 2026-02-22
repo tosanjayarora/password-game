@@ -67,18 +67,18 @@ jobs:
           terraform import \
               -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
               azurerm_resource_group.main_rg /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}
-          
-          # Try to import existing Application Insights if it exists
-          AI_ID=$(az resource list \
+      - name: Clean up existing Application Insights
+        id: cleanup_ai
+        continue-on-error: true
+        run: |
+          # Delete any existing Application Insights resources to avoid conflicts
+          az resource delete \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --resource-type "Microsoft.Insights/components" \
-            --query "[0].id" -o tsv)
-          
-          if [ ! -z "$AI_ID" ] && [ "$AI_ID" != "None" ]; then
-            terraform import \
-              -var "azure_resource_group_name=${{ env.AZURE_RESOURCE_GROUP }}" \
-              azurerm_application_insights.main_ai "$AI_ID" || true
-          fi
+            --ids $(az resource list \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --resource-type "Microsoft.Insights/components" \
+              --query "[].id" -o tsv)
       - name: Terraform Plan
         id: plan
         run: |
