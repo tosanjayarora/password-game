@@ -75,9 +75,21 @@ resource "azurerm_static_web_app" "dog_game" {
   sku_size            = "Free"
 }
 
-resource "azurerm_signalr_service" "chat_service" {
+# Consumption plan for backend (Y1 - serverless, no quota issues)
+resource "azurerm_service_plan" "consumption_plan" {
   depends_on = [azurerm_static_web_app.dog_game]
-  name                = "${local.service_prefix}-signalr-${random_string.service_suffix.id}"
+  name                = "${local.service_prefix}-consumption-${random_string.service_suffix.id}"
+  location            = azurerm_resource_group.main_rg.location
+  resource_group_name = azurerm_resource_group.main_rg.name
+  os_type             = "Linux"
+  sku_name            = "Y1"
+  timeouts {
+    create = "10m"
+  }
+}
+
+resource "azurerm_signalr_service" "chat_service" {
+  depends_on = [azurerm_service_plan.consumption_plan]
   location            = azurerm_resource_group.main_rg.location
   resource_group_name = azurerm_resource_group.main_rg.name
   sku {
@@ -101,11 +113,7 @@ resource "azurerm_linux_function_app" "backend_api" {
   name                       = "${local.service_prefix}-backend-api-${random_string.service_suffix.id}"
   location                   = azurerm_resource_group.main_rg.location
   resource_group_name        = azurerm_resource_group.main_rg.name
-  storage_account_name       = azurerm_storage_account.main_storage.name
-  storage_account_access_key = azurerm_storage_account.main_storage.primary_access_key
-  https_only                 = true
-  app_settings = {
-    "NODE_ENV"                       = "production",
+  service_plan_id            = azurerm_service_plan.consumption_plan.id
     "StorageAccountConnectionString" = azurerm_storage_account.main_storage.primary_connection_string
     "SignalRConnectionString"        = azurerm_signalr_service.chat_service.primary_connection_string
     "WEBSITE_RUN_FROM_PACKAGE"       = 1
