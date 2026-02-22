@@ -39,7 +39,7 @@ resource "azurerm_application_insights" "main_ai" {
   application_type    = "web"
   timeouts {
     create = "10m"
-  }  
+  }
 }
 
 resource "azurerm_storage_account" "main_storage" {
@@ -53,7 +53,7 @@ resource "azurerm_storage_account" "main_storage" {
   access_tier              = "Hot"
   timeouts {
     create = "10m"
-  }  
+  }
 }
 
 # Static Web Apps for frontends (no service plan quota required)
@@ -86,14 +86,14 @@ resource "azurerm_signalr_service" "chat_service" {
   }
   cors {
     allowed_origins = [
-      azurerm_static_web_app.cat_game.default_static_web_app_url,
-      azurerm_static_web_app.dog_game.default_static_web_app_url,
+      "https://${azurerm_static_web_app.cat_game.default_host_name}",
+      "https://${azurerm_static_web_app.dog_game.default_host_name}",
     ]
   }
   service_mode = "Serverless"
   timeouts {
     create = "10m"
-  }  
+  }
 }
 
 resource "azurerm_linux_function_app" "backend_api" {
@@ -117,15 +117,15 @@ resource "azurerm_linux_function_app" "backend_api" {
     }
     cors {
       allowed_origins = [
-        azurerm_static_web_app.cat_game.default_static_web_app_url,
-        azurerm_static_web_app.dog_game.default_static_web_app_url,
+        "https://${azurerm_static_web_app.cat_game.default_host_name}",
+        "https://${azurerm_static_web_app.dog_game.default_host_name}",
       ]
       support_credentials = true
     }
   }
   timeouts {
     create = "10m"
-  }  
+  }
 }
 
 output "app_insights_instrumentation_key" {
@@ -134,11 +134,11 @@ output "app_insights_instrumentation_key" {
 }
 
 output "cat_game_url" {
-  value = azurerm_static_web_app.cat_game.default_static_web_app_url
+  value = "https://${azurerm_static_web_app.cat_game.default_host_name}"
 }
 
 output "dog_game_url" {
-  value = azurerm_static_web_app.dog_game.default_static_web_app_url
+  value = "https://${azurerm_static_web_app.dog_game.default_host_name}"
 }
 
 output "backend_api_func_app_name" {
