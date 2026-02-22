@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - backup
+      - beta
       - wibartle
   workflow_dispatch:
     inputs:
