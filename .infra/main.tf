@@ -114,9 +114,14 @@ resource "azurerm_linux_function_app" "backend_api" {
   location                   = azurerm_resource_group.main_rg.location
   resource_group_name        = azurerm_resource_group.main_rg.name
   service_plan_id            = azurerm_service_plan.consumption_plan.id
-    "StorageAccountConnectionString" = azurerm_storage_account.main_storage.primary_connection_string
-    "SignalRConnectionString"        = azurerm_signalr_service.chat_service.primary_connection_string
-    "WEBSITE_RUN_FROM_PACKAGE"       = 1
+  storage_account_name       = azurerm_storage_account.main_storage.name
+  storage_account_access_key = azurerm_storage_account.main_storage.primary_access_key
+  https_only                 = true
+  app_settings = {
+    NODE_ENV                       = "production"
+    StorageAccountConnectionString = azurerm_storage_account.main_storage.primary_connection_string
+    SignalRConnectionString        = azurerm_signalr_service.chat_service.primary_connection_string
+    WEBSITE_RUN_FROM_PACKAGE       = 1
   }
   site_config {
     application_insights_key = azurerm_application_insights.main_ai.instrumentation_key
