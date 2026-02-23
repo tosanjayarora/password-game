@@ -49,7 +49,9 @@ jobs:
           client-id: ${{ env.ARM_CLIENT_ID }}
           tenant-id: ${{ env.ARM_TENANT_ID }}
           subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
+      - name: Install Static Web Apps CLI extension
+        run: |
+          az extension show --name "staticwebapp" >/dev/null 2>&1 || az extension add --name "staticwebapp"
       - uses: hashicorp/setup-terraform@v2
         with:
           terraform_wrapper: false
@@ -195,17 +197,15 @@ jobs:
           client-id: ${{ env.ARM_CLIENT_ID }}
           tenant-id: ${{ env.ARM_TENANT_ID }}
           subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+      - name: Get cat-game deployment token
+        run: |
+          echo "CAT_SWA_TOKEN=$(az staticwebapp secrets list --name \"${{ needs.terraform.outputs.cat_game_app_service_name }}\" --resource-group \"${{ env.AZURE_RESOURCE_GROUP }}\" --query properties.apiKey -o tsv)" >> "$GITHUB_ENV"
       - name: Deploy cat-game
         run: |
-          echo "Deploying cat-game static site"
-          az staticwebapp upload \
-            --name "${{ needs.terraform.outputs.cat_game_app_name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --source ./cat-game/dist
+          npx @azure/static-web-apps-cli deploy ./cat-game/dist --deployment-token "$CAT_SWA_TOKEN" --env production
+      - name: Get dog-game deployment token
+        run: |
+          echo "DOG_SWA_TOKEN=$(az staticwebapp secrets list --name \"${{ needs.terraform.outputs.dog_game_app_service_name }}\" --resource-group \"${{ env.AZURE_RESOURCE_GROUP }}\" --query properties.apiKey -o tsv)" >> "$GITHUB_ENV"
       - name: Deploy dog-game
         run: |
-          echo "Deploying dog-game static site"
-          az staticwebapp upload \
-            --name "${{ needs.terraform.outputs.dog_game_app_name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --source ./dog-game/dist
+          npx @azure/static-web-apps-cli deploy ./dog-game/dist --deployment-token "$DOG_SWA_TOKEN" --env production
